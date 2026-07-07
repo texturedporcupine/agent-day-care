@@ -5,6 +5,7 @@ import { Bus } from "./bus.js";
 import { penConfigSchema, type PenConfig } from "../shared/schema.js";
 import { startMockCollector } from "./collectors/mock.js";
 import { startCursorCloudCollector } from "./collectors/cursorCloud.js";
+import { createWebhookHandler } from "./collectors/webhook.js";
 
 const PORT = Number(process.env.BUS_PORT ?? 8787);
 
@@ -21,18 +22,27 @@ function loadPens(): PenConfig[] {
   }
 }
 
-const httpServer = createServer((_req, res) => {
+const webhooksEnabled = process.env.WEBHOOKS === "1";
+
+const httpServer = createServer((req, res) => {
+  if (webhooksEnabled && req.url?.startsWith("/hooks/")) {
+    webhookHandler(req, res);
+    return;
+  }
   res.writeHead(404).end();
 });
 
 const bus = new Bus(httpServer);
+const webhookHandler = createWebhookHandler(bus);
 bus.registerPens(loadPens());
 
 const cursorCloudEnabled = Boolean(process.env.CURSOR_API_KEY);
-const mockEnabled = process.env.MOCK ? process.env.MOCK === "1" : !cursorCloudEnabled;
+const anyRealSource = cursorCloudEnabled || webhooksEnabled;
+const mockEnabled = process.env.MOCK ? process.env.MOCK === "1" : !anyRealSource;
 
 if (mockEnabled) startMockCollector(bus);
 if (cursorCloudEnabled) startCursorCloudCollector(bus);
+if (webhooksEnabled) console.log("[webhook] collector listening on POST /hooks/:sourceId");
 
 httpServer.listen(PORT, () => {
   console.log(`[main] bus listening on ws://localhost:${PORT}`);
