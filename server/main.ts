@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Bus } from "./bus.js";
 import { penConfigSchema, type PenConfig } from "../shared/schema.js";
 import { startMockCollector } from "./collectors/mock.js";
+import { startCursorCloudCollector } from "./collectors/cursorCloud.js";
 
 const PORT = Number(process.env.BUS_PORT ?? 8787);
 
@@ -27,8 +28,11 @@ const httpServer = createServer((_req, res) => {
 const bus = new Bus(httpServer);
 bus.registerPens(loadPens());
 
-const mockEnabled = process.env.MOCK ? process.env.MOCK === "1" : true;
+const cursorCloudEnabled = Boolean(process.env.CURSOR_API_KEY);
+const mockEnabled = process.env.MOCK ? process.env.MOCK === "1" : !cursorCloudEnabled;
+
 if (mockEnabled) startMockCollector(bus);
+if (cursorCloudEnabled) startCursorCloudCollector(bus);
 
 httpServer.listen(PORT, () => {
   console.log(`[main] bus listening on ws://localhost:${PORT}`);
