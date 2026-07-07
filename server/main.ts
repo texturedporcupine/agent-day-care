@@ -5,6 +5,7 @@ import { Bus } from "./bus.js";
 import { penConfigSchema, type PenConfig } from "../shared/schema.js";
 import { startMockCollector } from "./collectors/mock.js";
 import { startCursorCloudCollector } from "./collectors/cursorCloud.js";
+import { startCursorCliCollector } from "./collectors/cursorCli.js";
 import { createWebhookHandler } from "./collectors/webhook.js";
 
 const PORT = Number(process.env.BUS_PORT ?? 8787);
@@ -37,11 +38,13 @@ const webhookHandler = createWebhookHandler(bus);
 bus.registerPens(loadPens());
 
 const cursorCloudEnabled = Boolean(process.env.CURSOR_API_KEY);
-const anyRealSource = cursorCloudEnabled || webhooksEnabled;
+const cursorCliEnabled = process.env.CURSOR_CLI === "1";
+const anyRealSource = cursorCloudEnabled || cursorCliEnabled || webhooksEnabled;
 const mockEnabled = process.env.MOCK ? process.env.MOCK === "1" : !anyRealSource;
 
 if (mockEnabled) startMockCollector(bus);
 if (cursorCloudEnabled) startCursorCloudCollector(bus);
+if (cursorCliEnabled) startCursorCliCollector(bus);
 if (webhooksEnabled) console.log("[webhook] collector listening on POST /hooks/:sourceId");
 
 httpServer.listen(PORT, () => {
