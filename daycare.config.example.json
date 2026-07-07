@@ -1,0 +1,6 @@
+[
+  { "agentId": "cursor-cloud-1", "source": "cursor-cloud", "species": "sparkmon", "nickname": "Volteon", "url": "https://cursor.com/agents?id=bc-..." },
+  { "agentId": "cursor-cli-1", "source": "cursor-cli", "species": "embermon", "nickname": "Cindaquil" },
+  { "agentId": "claude-1", "source": "claude", "species": "aquamon", "nickname": "Squirtwo" },
+  { "agentId": "chatgtm-1", "source": "chatgtm", "species": "leafmon", "nickname": "Bulbabot" }
+]
