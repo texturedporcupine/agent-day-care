@@ -3,8 +3,8 @@ import type { AgentEvent } from "@shared/schema";
 import { Pen, PEN_W, PEN_H } from "./Pen";
 import { DayCareLady } from "./DayCareLady";
 import { makeTextures } from "./textures";
-import { connectBus } from "./net";
-import { updateStatusBar, setConnectionStatus } from "./hud";
+import { connectBus, type ConnectionState } from "./net";
+import { updateStatusBar, setConnectionStatus, updateEmptyState } from "./hud";
 
 export const SCENE_W = 512;
 export const SCENE_H = 400;
@@ -18,6 +18,7 @@ export class DayCareScene extends Phaser.Scene {
   private pens = new Map<string, Pen>();
   private agents = new Map<string, AgentEvent>();
   private lady!: DayCareLady;
+  private connection: ConnectionState = "connecting";
 
   constructor() {
     super("daycare");
@@ -34,10 +35,17 @@ export class DayCareScene extends Phaser.Scene {
       callback: () => this.lady.tend([...this.pens.values()]),
     });
 
+    updateEmptyState(this.agents.size, this.connection);
     connectBus({
       onAgent: (agent) => this.onAgent(agent),
-      onConnectionChange: setConnectionStatus,
+      onConnectionChange: (state) => this.onConnectionChange(state),
     });
+  }
+
+  private onConnectionChange(state: ConnectionState): void {
+    this.connection = state;
+    setConnectionStatus(state);
+    updateEmptyState(this.agents.size, state);
   }
 
   private onAgent(agent: AgentEvent): void {
@@ -49,6 +57,7 @@ export class DayCareScene extends Phaser.Scene {
     }
     pen.update(agent);
     updateStatusBar(this.agents);
+    updateEmptyState(this.agents.size, this.connection);
   }
 
   private spawnPen(agent: AgentEvent): Pen {

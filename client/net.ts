@@ -1,8 +1,11 @@
 import type { AgentEvent, BusMessage } from "@shared/schema";
 
+/** Never connected yet / handshaking, live, or dropped and retrying. */
+export type ConnectionState = "connecting" | "connected" | "disconnected";
+
 export type NetCallbacks = {
   onAgent: (agent: AgentEvent) => void;
-  onConnectionChange: (connected: boolean) => void;
+  onConnectionChange: (state: ConnectionState) => void;
 };
 
 const BUS_URL = `ws://${location.hostname}:8787`;
@@ -12,11 +15,12 @@ export function connectBus(callbacks: NetCallbacks): void {
   let retryMs = 1000;
 
   const open = () => {
+    callbacks.onConnectionChange("connecting");
     const socket = new WebSocket(BUS_URL);
 
     socket.onopen = () => {
       retryMs = 1000;
-      callbacks.onConnectionChange(true);
+      callbacks.onConnectionChange("connected");
     };
 
     socket.onmessage = (raw) => {
@@ -36,7 +40,7 @@ export function connectBus(callbacks: NetCallbacks): void {
     };
 
     socket.onclose = () => {
-      callbacks.onConnectionChange(false);
+      callbacks.onConnectionChange("disconnected");
       setTimeout(open, retryMs);
       retryMs = Math.min(retryMs * 2, 15000);
     };
