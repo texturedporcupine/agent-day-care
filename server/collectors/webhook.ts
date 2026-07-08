@@ -25,14 +25,26 @@ export function createWebhookHandler(bus: Bus) {
     }
 
     let body = "";
+    let rejected = false;
     req.on("data", (chunk: Buffer) => {
+      if (rejected) return;
       body += chunk.toString("utf8");
-      if (body.length > MAX_BODY_BYTES) req.destroy();
+      if (body.length > MAX_BODY_BYTES) {
+        rejected = true;
+        res.writeHead(413, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "payload too large" }));
+        req.destroy();
+      }
     });
     req.on("end", () => {
+      if (rejected) return;
       try {
-        const payload = JSON.parse(body) as Record<string, unknown>;
-        const patch = adapterFor(sourceId)(payload);
+        const payload = JSON.parse(body) as unknown;
+        // Adapters expect an object; a bare array/string/number is malformed.
+        if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+          throw new Error("expected a JSON object");
+        }
+        const patch = adapterFor(sourceId)(payload as Record<string, unknown>);
         if (patch) bus.publish(patch);
         res.writeHead(patch ? 202 : 200, { "content-type": "application/json" });
         res.end(JSON.stringify({ accepted: Boolean(patch) }));
@@ -40,6 +52,9 @@ export function createWebhookHandler(bus: Bus) {
         res.writeHead(400, { "content-type": "application/json" });
         res.end(JSON.stringify({ error: "invalid JSON" }));
       }
+    });
+    req.on("error", () => {
+      // Client aborted / socket error mid-body: nothing left to respond to.
     });
   };
 }
