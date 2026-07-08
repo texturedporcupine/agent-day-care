@@ -15,9 +15,15 @@ import {
  */
 export class Bus {
   private agents = new Map<string, AgentEvent>();
-  private wss: WebSocketServer;
+  private wss: WebSocketServer | null = null;
 
-  constructor(httpServer: HttpServer) {
+  /**
+   * Pass an http server to attach the WebSocket transport (production). Omit it
+   * to construct a transport-less bus for unit tests — the state store, merge,
+   * and validation behavior are identical; broadcast simply becomes a no-op.
+   */
+  constructor(httpServer?: HttpServer) {
+    if (!httpServer) return;
     this.wss = new WebSocketServer({ server: httpServer });
     this.wss.on("connection", (socket) => {
       const snapshot: BusMessage = { type: "snapshot", agents: [...this.agents.values()] };
@@ -63,6 +69,7 @@ export class Bus {
   }
 
   private broadcast(message: BusMessage): void {
+    if (!this.wss) return;
     const payload = JSON.stringify(message);
     for (const client of this.wss.clients) {
       if (client.readyState === WebSocket.OPEN) client.send(payload);
