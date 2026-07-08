@@ -15,6 +15,25 @@ npm run dev
 
 Open http://localhost:5173. With no configuration, the **mock collector** runs
 and four creatures cycle through every state — the scene works fully offline.
+If the bus is unreachable or no agents have arrived yet, the yard shows a
+connection indicator (top-right) and a centered "no agents yet" message instead
+of sitting silent.
+
+## Tests and CI
+
+```bash
+npm test          # run the unit suite once (vitest)
+npm run test:watch  # watch mode
+npm run typecheck # tsc --noEmit
+npm run build     # typecheck + production bundle
+```
+
+Tests cover the pure, easy-to-break-silently logic: `normalizeTool`'s tool
+buckets, the bus merge/validation (valid patches merge, invalid ones are dropped
+without corrupting state, pens seed eggs, defaults fill in), each adapter's
+payload mapping, and the webhook collector's secret/size/JSON guards. The
+[CI workflow](.github/workflows/ci.yml) runs `typecheck`, `test`, and `build` on
+every push and pull request (Node 20).
 
 ## How state maps to behavior
 
@@ -73,8 +92,11 @@ tool's equipment, `result` -> levelup). Set the prompt with `CURSOR_CLI_PROMPT`.
 
 ### Webhooks (claude, chatgtm, anything) — `WEBHOOKS=1`
 
-One endpoint captures everything: `POST /hooks/:sourceId` with a JSON body.
-Optionally set `WEBHOOK_SECRET` and send it as the `X-Daycare-Secret` header.
+One endpoint captures everything: `POST /hooks/:sourceId` with a JSON body. The
+collector only accepts `POST`, rejects bodies over 64 KB (`413`), and returns
+`400` for malformed / non-object JSON — a bad request can never crash the bus.
+When `WEBHOOK_SECRET` is set, requests **must** send it as the `X-Daycare-Secret`
+header or they are rejected with `401`.
 
 - **`/hooks/claude`** — point Claude Code lifecycle hooks at it. In
   `~/.claude/settings.json`, add hooks for `SessionStart`, `PreToolUse`,
