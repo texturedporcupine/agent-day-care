@@ -8,7 +8,22 @@ export type NetCallbacks = {
   onConnectionChange: (state: ConnectionState) => void;
 };
 
-const BUS_URL = `ws://${location.hostname}:8787`;
+/**
+ * Where the WebSocket bus lives, resolved per environment:
+ *  - `VITE_BUS_URL` wins if set (point a dev client at a remote bus).
+ *  - Vite dev (port 5173) has the bus running separately on 8787.
+ *  - Production serves client + bus from one origin, so match the page: same
+ *    host and port, ws:// or wss:// following the page protocol.
+ */
+function resolveBusUrl(): string {
+  const override = import.meta.env.VITE_BUS_URL;
+  if (override) return override;
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  if (import.meta.env.DEV) return `${proto}//${location.hostname}:8787`;
+  return `${proto}//${location.host}`;
+}
+
+const BUS_URL = resolveBusUrl();
 
 /** Connect to the bus with auto-reconnect; snapshot replays as individual diffs. */
 export function connectBus(callbacks: NetCallbacks): void {
