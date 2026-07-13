@@ -2,7 +2,12 @@ import { createServer } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { loadEnv } from "./env.js";
 import { Bus } from "./bus.js";
+
+// Load repo-root .env before anything reads process.env below. Absent .env is
+// fine (mock quick-start); real env vars always override file values.
+loadEnv();
 import { penConfigSchema, type PenConfig } from "../shared/schema.js";
 import { startMockCollector } from "./collectors/mock.js";
 import { startCursorCloudCollector } from "./collectors/cursorCloud.js";

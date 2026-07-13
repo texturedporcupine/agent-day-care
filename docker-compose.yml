@@ -7,17 +7,20 @@ services:
     # webhook endpoints publicly with a narrow tunnel (see README), never the map.
     ports:
       - "127.0.0.1:8787:8787"
+    # Load a repo-root .env if present (INGEST_TOKEN, WEBHOOKS, WEBHOOK_SECRET,
+    # CURSOR_API_KEY, ...). required:false keeps the mock quick-start working with
+    # no .env. Values here are overridden by the explicit `environment:` below.
+    env_file:
+      - path: .env
+        required: false
     environment:
       HOST: "0.0.0.0" # bind all interfaces INSIDE the container (host port is loopback-bound above)
       PORT: "8787"
       DATA_DIR: /app/data
-      # Required to POST /api/events from the host in Docker: requests arrive
-      # from the container gateway (not loopback), so a token is mandatory.
-      # INGEST_TOKEN: "change-me"
-      # --- optional collectors ---
-      # WEBHOOKS: "1"
-      # WEBHOOK_SECRET: "change-me"
-      # CURSOR_API_KEY: ""
+      # To POST /api/events from the host in Docker, set INGEST_TOKEN (here or in
+      # .env): requests arrive from the container gateway (not loopback), so a
+      # token is mandatory. Cursor CLI collection is native-only unless you add
+      # the `agent` CLI to a custom image (see README).
     volumes:
       - daycare-data:/app/data
     restart: unless-stopped

@@ -11,7 +11,11 @@
  * Auth: sends `Authorization: Bearer $INGEST_TOKEN` when INGEST_TOKEN is set (or
  * --token is passed). With no token the server accepts loopback requests only.
  */
+import { loadEnv } from "../server/env.js";
 import { STATES, TOOLS, agentEventPatchSchema, type AgentEventPatch } from "../shared/schema.js";
+
+// Pick up INGEST_TOKEN / DAYCARE_URL from a repo-root .env when present.
+loadEnv();
 
 type Flags = Record<string, string | undefined>;
 

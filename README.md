@@ -53,12 +53,25 @@ collector animates the scene offline.
 Copy `.env.example` to `.env` and set only what you need. Never commit real
 secrets.
 
+## Configure `.env`
+
+```bash
+cp .env.example .env   # then edit .env and fill in what you want enabled
+```
+
+`.env` is **gitignored** — keep your secrets there. It is loaded automatically at
+startup (via `dotenv`) by `npm start`, `npm run dev`, `npm run emit`, and
+Docker Compose. Skipping this step is fine: with no `.env` the mock collector
+animates the scene offline. **Real environment variables always override `.env`
+values** (so `PORT=9000 npm start` and Compose's `environment:` win).
+
 ## Native run
 
 ```bash
 npm install
-npm run build      # typecheck + bundle the client into dist/
-npm start          # serve dist/ AND run the bus + collectors on one port
+cp .env.example .env   # optional; edit to enable real collectors
+npm run build          # typecheck + bundle the client into dist/
+npm start              # serve dist/ AND run the bus + collectors on one port
 ```
 
 Open **http://localhost:8787** — that's it. One Node process serves the built
@@ -82,7 +95,8 @@ bus (so dev clients can connect); build first to serve the dashboard here.
 ## Docker Compose run
 
 ```bash
-docker compose up --build -d      # build + start in the background
+cp .env.example .env              # optional; fill in secrets/collectors
+docker compose up -d --build      # build + start in the background
 curl -s http://127.0.0.1:8787/healthz
 docker compose logs -f            # follow logs
 docker compose down               # stop (named volume `daycare-data` persists state)
@@ -92,16 +106,27 @@ The multi-stage image builds the client and an esbuild-bundled server, then runs
 a small non-root `node` process — no `node_modules`, no build tools in the final
 image. `docker-compose.yml`:
 
-- binds **`127.0.0.1:8787`** on the host (dashboard stays local),
-- sets `HOST=0.0.0.0` **inside** the container so the process is reachable there,
-- mounts the named volume `daycare-data` at `/app/data` (`DATA_DIR`),
+- loads your repo-root `.env` via `env_file` (optional — a missing `.env` is
+  fine), so `INGEST_TOKEN` / `WEBHOOKS` / `WEBHOOK_SECRET` / `CURSOR_API_KEY`
+  reach the container. Secrets are **not** baked into the image (`.env` is
+  `.dockerignore`d);
+- sets `HOST=0.0.0.0`, `PORT=8787`, `DATA_DIR=/app/data` via `environment:`,
+  which **override** any conflicting `.env` values;
+- binds **`127.0.0.1:8787`** on the host (dashboard stays local);
+- mounts the named volume `daycare-data` at `/app/data`;
 - restarts `unless-stopped`, with a `/healthz` healthcheck.
 
 > **Ingest in Docker:** requests from your host reach the container from the
 > container gateway, which is **not** loopback inside the container. So to use
-> `POST /api/events` in Docker you **must** set `INGEST_TOKEN` (uncomment it in
-> `docker-compose.yml`) and send `Authorization: Bearer <token>`. Webhooks use
+> `POST /api/events` in Docker you **must** set `INGEST_TOKEN` (in `.env` or the
+> compose `environment:`) and send `Authorization: Bearer <token>`. Webhooks use
 > `WEBHOOK_SECRET` instead.
+
+> **Cursor CLI in Docker:** the `cursor-cli` collector spawns the `agent` binary,
+> which is **not** in the image, so `CURSOR_CLI=1` is **native-only** by default.
+> Stock Docker supports Cursor Cloud (`CURSOR_API_KEY`), webhooks (`WEBHOOKS=1`),
+> and the universal `/api/events` ingest. To collect Cursor CLI in a container,
+> build a custom image that includes/mounts the `agent` CLI.
 
 ## Persistence
 
