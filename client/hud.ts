@@ -1,4 +1,5 @@
 import type { AgentEvent } from "@shared/schema";
+import type { ConnectionState } from "./net";
 
 const el = (id: string) => document.getElementById(id)!;
 
@@ -20,8 +21,52 @@ export function updateStatusBar(agents: Map<string, AgentEvent>): void {
   el("count-tokens").textContent = tokens.toLocaleString();
 }
 
-export function setConnectionStatus(connected: boolean): void {
+export function setConnectionStatus(state: ConnectionState): void {
   const status = el("conn-status");
-  status.textContent = connected ? "● live" : "○ reconnecting...";
-  status.style.color = connected ? "#a7f070" : "#ef7d57";
+  switch (state) {
+    case "connected":
+      status.textContent = "● live";
+      status.style.color = "#a7f070";
+      break;
+    case "connecting":
+      status.textContent = "○ connecting…";
+      status.style.color = "#ffcd75";
+      break;
+    case "disconnected":
+      status.textContent = "○ reconnecting…";
+      status.style.color = "#ef7d57";
+      break;
+    default: {
+      const _exhaustive: never = state;
+      void _exhaustive;
+    }
+  }
+}
+
+/**
+ * Shows a centered message over the empty yard so it never sits silent: while
+ * the bus is offline, and once connected but before any creature has arrived.
+ */
+export function updateEmptyState(agentCount: number, state: ConnectionState): void {
+  const empty = el("empty-state");
+  if (agentCount > 0) {
+    empty.classList.add("hidden");
+    return;
+  }
+  empty.classList.remove("hidden");
+  switch (state) {
+    case "connected":
+      empty.textContent = "no agents yet — the day care is quiet";
+      break;
+    case "connecting":
+      empty.textContent = "connecting to the bus…";
+      break;
+    case "disconnected":
+      empty.textContent = "bus offline — reconnecting…";
+      break;
+    default: {
+      const _exhaustive: never = state;
+      void _exhaustive;
+    }
+  }
 }

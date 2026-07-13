@@ -44,6 +44,7 @@
       #status-bar .tokens { color: var(--accent); }
       #status-bar .conn { margin-left: auto; font-size: 11px; opacity: 0.7; }
       #game {
+        position: relative;
         flex: 1;
         display: flex;
         align-items: center;
@@ -51,6 +52,21 @@
         width: 100%;
       }
       canvas { image-rendering: pixelated; }
+      #empty-state {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 10px 16px;
+        background: rgba(15, 18, 48, 0.85);
+        border: 2px solid var(--panel);
+        color: var(--text);
+        font-size: 13px;
+        letter-spacing: 1px;
+        text-align: center;
+        pointer-events: none;
+      }
+      #empty-state.hidden { display: none; }
     </style>
   </head>
   <body>
@@ -59,9 +75,11 @@
       <span class="stat"><span class="dot napping"></span>napping <b id="count-napping">0</b></span>
       <span class="stat"><span class="dot fainted"></span>fainted <b id="count-fainted">0</b></span>
       <span class="stat tokens">tokens today <b id="count-tokens">0</b></span>
-      <span class="conn" id="conn-status">connecting...</span>
+      <span class="conn" id="conn-status">connecting…</span>
     </div>
-    <div id="game"></div>
+    <div id="game">
+      <div id="empty-state" class="hidden">connecting to the bus…</div>
+    </div>
     <script type="module" src="/client/main.ts"></script>
   </body>
 </html>
