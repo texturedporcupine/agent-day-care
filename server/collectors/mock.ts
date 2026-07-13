@@ -14,6 +14,7 @@ const CREATURES: MockCreature[] = [
   { agentId: "mock-cli-1", source: "cursor-cli", species: "embermon", nickname: "Cindaquil", tokens: 0 },
   { agentId: "mock-claude-1", source: "claude", species: "aquamon", nickname: "Squirtwo", tokens: 0 },
   { agentId: "mock-chatgtm-1", source: "chatgtm", species: "leafmon", nickname: "Bulbabot", tokens: 0 },
+  { agentId: "mock-sand-1", source: "sand", species: "sparkmon", nickname: "Sandy", tokens: 0 },
 ];
 
 const ACTIVITIES: Record<Tool, string[]> = {

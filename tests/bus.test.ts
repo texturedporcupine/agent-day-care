@@ -109,4 +109,45 @@ describe("Bus", () => {
 
     expect(bus.getAgent("p1")?.state).toBe("working");
   });
+
+  it("accepts the sand source", () => {
+    bus.publish({ agentId: "sand-1", source: "sand", state: "working", ts: 1 });
+    expect(bus.getAgent("sand-1")).toMatchObject({ source: "sand", state: "working" });
+  });
+
+  it("reports agent and browser counts", () => {
+    expect(bus.agentCount()).toBe(0);
+    expect(bus.browserCount()).toBe(0); // no transport attached in tests
+    bus.publish({ agentId: "a1", state: "working", ts: 1 });
+    expect(bus.agentCount()).toBe(1);
+    expect(bus.snapshot().map((a) => a.agentId)).toEqual(["a1"]);
+  });
+
+  describe("hydrate + onChange", () => {
+    it("hydrate seeds agents without overwriting live ones and without firing onChange", () => {
+      const changes: number[] = [];
+      const b = new Bus({ onChange: (agents) => changes.push(agents.length) });
+      b.publish({ agentId: "live", source: "sand", state: "working", ts: 5 });
+      changes.length = 0; // ignore the publish above
+
+      b.hydrate([
+        { agentId: "live", source: "sand", species: "sparkmon", nickname: "Live", state: "egg", ts: 1 },
+        { agentId: "restored", source: "claude", species: "aquamon", nickname: "R", state: "napping", ts: 1 },
+      ]);
+
+      // Live agent kept its working state; restored one was added.
+      expect(b.getAgent("live")?.state).toBe("working");
+      expect(b.getAgent("restored")?.state).toBe("napping");
+      // hydrate must not trigger a persistence write of what we just read.
+      expect(changes).toEqual([]);
+    });
+
+    it("publish fires onChange with the full snapshot", () => {
+      const snapshots: string[][] = [];
+      const b = new Bus({ onChange: (agents) => snapshots.push(agents.map((a) => a.agentId)) });
+      b.publish({ agentId: "a1", state: "working", ts: 1 });
+      b.publish({ agentId: "a2", state: "thinking", ts: 2 });
+      expect(snapshots.at(-1)).toEqual(["a1", "a2"]);
+    });
+  });
 });

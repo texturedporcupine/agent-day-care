@@ -1,0 +1,32 @@
+services:
+  daycare:
+    build: .
+    image: agent-day-care
+    container_name: agent-day-care
+    # Bind to the host loopback only: the dashboard + bus stay local. Expose the
+    # webhook endpoints publicly with a narrow tunnel (see README), never the map.
+    ports:
+      - "127.0.0.1:8787:8787"
+    environment:
+      HOST: "0.0.0.0" # bind all interfaces INSIDE the container (host port is loopback-bound above)
+      PORT: "8787"
+      DATA_DIR: /app/data
+      # Required to POST /api/events from the host in Docker: requests arrive
+      # from the container gateway (not loopback), so a token is mandatory.
+      # INGEST_TOKEN: "change-me"
+      # --- optional collectors ---
+      # WEBHOOKS: "1"
+      # WEBHOOK_SECRET: "change-me"
+      # CURSOR_API_KEY: ""
+    volumes:
+      - daycare-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8787/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  daycare-data:

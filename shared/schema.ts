@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-export const SOURCES = ["cursor-cloud", "cursor-cli", "claude", "chatgtm"] as const;
+// Order is append-only for backwards compatibility: existing values keep their
+// meaning and new platforms are added at the end. `sand` covers the Sand local
+// tool, which integrates through the universal /api/events emitter (no adapter).
+export const SOURCES = ["cursor-cloud", "cursor-cli", "claude", "chatgtm", "sand"] as const;
 export type Source = (typeof SOURCES)[number];
 
 export const STATES = ["egg", "napping", "thinking", "working", "levelup", "fainted"] as const;

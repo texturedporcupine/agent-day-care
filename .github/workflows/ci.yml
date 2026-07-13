@@ -1,8 +1,30 @@
 name: CI
 
+# Run on PRs for feature branches and on push to main only. This avoids the
+# double run where an open PR's branch push and the pull_request event both
+# trigger the same revision.
 on:
   push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+      - ".vscode/**"
   pull_request:
+    # Default types (opened, synchronize, reopened) keep PR sync behavior.
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+      - ".vscode/**"
+
+# One in-flight run per workflow+ref; newer pushes cancel superseded runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: CI only needs to read the repository.
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -20,11 +42,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Cheap to expensive: typecheck, tests, then the two builds.
       - name: Typecheck
         run: npm run typecheck
 
       - name: Test
         run: npm test
 
-      - name: Build
+      - name: Build client
         run: npm run build
+
+      # Gate the production server bundle that the Docker image depends on.
+      - name: Build server
+        run: npm run build:server

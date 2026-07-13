@@ -37,4 +37,5 @@ export const SOURCE_BADGE: Record<string, { color: number; letter: string }> = {
   "cursor-cli": { color: 0x94b0c2, letter: ">" },
   claude: { color: 0xef7d57, letter: "A" },
   chatgtm: { color: 0x38b764, letter: "G" },
+  sand: { color: 0xd6b370, letter: "S" },
 };

@@ -1,0 +1,17 @@
+# Rebuilt inside the image
+node_modules
+dist
+dist-server
+
+# VCS / local dev cruft
+.git
+.github
+.gitignore
+*.log
+.DS_Store
+
+# Secrets and local state — never bake these into an image
+.env
+.env.local
+daycare.config.json
+data
