@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { Bus } from "./bus.js";
 import { penConfigSchema, type PenConfig } from "../shared/schema.js";
@@ -7,8 +8,13 @@ import { startMockCollector } from "./collectors/mock.js";
 import { startCursorCloudCollector } from "./collectors/cursorCloud.js";
 import { startCursorCliCollector } from "./collectors/cursorCli.js";
 import { createWebhookHandler } from "./collectors/webhook.js";
+import { createStaticHandler } from "./static.js";
 
-const PORT = Number(process.env.BUS_PORT ?? 8787);
+// PORT is the conventional name; BUS_PORT stays as the historical alias.
+const PORT = Number(process.env.PORT ?? process.env.BUS_PORT ?? 8787);
+
+// The built client (dist/) lives next to server/ once `npm run build` has run.
+const DIST_DIR = fileURLToPath(new URL("../dist", import.meta.url));
 
 function loadPens(): PenConfig[] {
   const path = new URL("../daycare.config.json", import.meta.url).pathname;
@@ -25,9 +31,18 @@ function loadPens(): PenConfig[] {
 
 const webhooksEnabled = process.env.WEBHOOKS === "1";
 
+// Serve the built client from the same server when it exists. In `npm run dev`
+// the client is served by Vite (5173) instead, so a missing dist/ is expected.
+const distExists = existsSync(DIST_DIR);
+const serveStatic = distExists ? createStaticHandler(DIST_DIR) : null;
+
 const httpServer = createServer((req, res) => {
   if (webhooksEnabled && req.url?.startsWith("/hooks/")) {
     webhookHandler(req, res);
+    return;
+  }
+  if (serveStatic) {
+    serveStatic(req, res);
     return;
   }
   res.writeHead(404).end();
@@ -48,5 +63,10 @@ if (cursorCliEnabled) startCursorCliCollector(bus);
 if (webhooksEnabled) console.log("[webhook] collector listening on POST /hooks/:sourceId");
 
 httpServer.listen(PORT, () => {
-  console.log(`[main] bus listening on ws://localhost:${PORT}`);
+  if (serveStatic) {
+    console.log(`[main] dashboard + bus on http://localhost:${PORT}`);
+  } else {
+    console.log(`[main] bus listening on ws://localhost:${PORT}`);
+    console.log("[main] no dist/ found — run `npm run build && npm start` to serve the client here");
+  }
 });

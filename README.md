@@ -19,6 +19,40 @@ If the bus is unreachable or no agents have arrived yet, the yard shows a
 connection indicator (top-right) and a centered "no agents yet" message instead
 of sitting silent.
 
+`npm run dev` runs two processes: Vite serves the client on `5173`, and the bus
+runs separately on `8787` (the client connects to it directly). Great for
+hot-reload; for an always-on dashboard use the production path below.
+
+## Run it for real (local)
+
+```bash
+npm install
+npm run build      # typecheck + bundle the client into dist/
+npm start          # serve dist/ AND run the bus + collectors on one port
+```
+
+Open **http://localhost:8787** — that's it. One Node process serves the built
+client, hosts the WebSocket bus, and runs the collectors, so client and bus are
+same-origin (no Vite dev server, no second port). The page derives its bus URL
+from its own origin, so whatever host/port you serve on just works, including
+behind `https`/`wss`.
+
+Config and collectors work exactly as in dev, they just share this one process:
+
+- **Port** — defaults to `8787`. Set `PORT` (or the legacy `BUS_PORT`) to change
+  it: `PORT=9000 npm start` then open http://localhost:9000. Rebuilding is not
+  required to change the port.
+- **Collectors** — the same env vars apply (`CURSOR_API_KEY`, `CURSOR_CLI=1`,
+  `WEBHOOKS=1`, `MOCK`); see [Collectors and env vars](#collectors-and-env-vars).
+  With `WEBHOOKS=1`, `POST /hooks/:sourceId` is served on this same port.
+- **Pens** — `daycare.config.json` is loaded on boot as usual.
+
+If you run `npm start` without a `dist/`, it prints a hint and still runs the
+bus (so dev clients can connect); build first to serve the dashboard here.
+
+> Pointing a Vite dev client at a remote bus? Set `VITE_BUS_URL` (e.g.
+> `VITE_BUS_URL=ws://some-host:8787`) to override the derived URL.
+
 ## Tests and CI
 
 ```bash
@@ -31,7 +65,8 @@ npm run build     # typecheck + production bundle
 Tests cover the pure, easy-to-break-silently logic: `normalizeTool`'s tool
 buckets, the bus merge/validation (valid patches merge, invalid ones are dropped
 without corrupting state, pens seed eggs, defaults fill in), each adapter's
-payload mapping, and the webhook collector's secret/size/JSON guards. The
+payload mapping, the webhook collector's secret/size/JSON guards, and the static
+handler's path -> content-type map and directory-traversal guard. The
 [CI workflow](.github/workflows/ci.yml) runs `typecheck`, `test`, and `build` on
 every push and pull request (Node 20).
 
