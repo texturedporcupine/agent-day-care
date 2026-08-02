@@ -3,11 +3,12 @@ import { DayCareScene, SCENE_W, SCENE_H } from "./DayCareScene";
 
 const gameHost = document.getElementById("game")!;
 
-/** Largest integer zoom that fits the viewport, so pixels stay crisp. */
-function integerZoom(): number {
+/** Largest fitting zoom; preserve crisp integers unless a narrow screen needs scaling down. */
+function responsiveZoom(): number {
   const availW = gameHost.clientWidth;
   const availH = Math.max(400, window.innerHeight - 80);
-  return Math.max(1, Math.min(Math.floor(availW / SCENE_W), Math.floor(availH / SCENE_H)));
+  const fit = Math.min(availW / SCENE_W, availH / SCENE_H);
+  return fit < 1 ? Math.max(0.5, fit) : Math.floor(fit);
 }
 
 const game = new Phaser.Game({
@@ -15,16 +16,16 @@ const game = new Phaser.Game({
   parent: "game",
   width: SCENE_W,
   height: SCENE_H,
-  zoom: integerZoom(),
+  zoom: responsiveZoom(),
   pixelArt: true,
   backgroundColor: "#1a1c2c",
   scene: [DayCareScene],
 });
 
 window.addEventListener("resize", () => {
-  game.scale.setZoom(integerZoom());
+  game.scale.setZoom(responsiveZoom());
 });
 
 new ResizeObserver(() => {
-  game.scale.setZoom(integerZoom());
+  game.scale.setZoom(responsiveZoom());
 }).observe(gameHost);

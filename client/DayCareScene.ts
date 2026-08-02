@@ -11,7 +11,7 @@ export const SCENE_H = 400;
 
 const PENS_PER_ROW = 4;
 const PEN_GAP = 12;
-const PENS_TOP = 96; // below the day-care building
+const PENS_TOP = 108; // below the day-care building and its sign
 const BUILDING_Y = 24;
 
 export class DayCareScene extends Phaser.Scene {
