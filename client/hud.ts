@@ -1,24 +1,94 @@
-import type { AgentEvent } from "@shared/schema";
+import type { AgentEvent, CreatureState } from "@shared/schema";
 import type { ConnectionState } from "./net";
 
 const el = (id: string) => document.getElementById(id)!;
 
+const STATE_PRIORITY: Record<CreatureState, number> = {
+  fainted: 0,
+  levelup: 1,
+  working: 2,
+  thinking: 3,
+  egg: 4,
+  napping: 5,
+};
+
+const STATE_COLOR: Record<CreatureState, string> = {
+  fainted: "#ef7d57",
+  levelup: "#c17be8",
+  working: "#a7f070",
+  thinking: "#ffcd75",
+  egg: "#f4f4f4",
+  napping: "#73eff7",
+};
+
 /** Updates the DOM status bar above the Phaser canvas. */
 export function updateStatusBar(agents: Map<string, AgentEvent>): void {
+  let thinking = 0;
   let working = 0;
+  let levelup = 0;
   let napping = 0;
   let fainted = 0;
   let tokens = 0;
   for (const agent of agents.values()) {
+    if (agent.state === "thinking") thinking++;
     if (agent.state === "working") working++;
+    if (agent.state === "levelup") levelup++;
     if (agent.state === "napping") napping++;
     if (agent.state === "fainted") fainted++;
     tokens += agent.tokens ?? 0;
   }
+  el("count-thinking").textContent = String(thinking);
   el("count-working").textContent = String(working);
+  el("count-levelup").textContent = String(levelup);
   el("count-napping").textContent = String(napping);
   el("count-fainted").textContent = String(fainted);
   el("count-tokens").textContent = tokens.toLocaleString();
+}
+
+/** Renders the operational thread list, ordered by what needs attention first. */
+export function updateThreadList(agents: Map<string, AgentEvent>): void {
+  const threadList = el("thread-list");
+  const empty = el("threads-empty");
+  const sortedAgents = [...agents.values()].sort(
+    (a, b) => STATE_PRIORITY[a.state] - STATE_PRIORITY[b.state] || b.ts - a.ts,
+  );
+
+  const fragment = document.createDocumentFragment();
+  for (const agent of sortedAgents) {
+    const card = agent.url ? document.createElement("a") : document.createElement("article");
+    card.className = "thread-card";
+    card.style.setProperty("--state-color", STATE_COLOR[agent.state]);
+    if (agent.url && card instanceof HTMLAnchorElement) {
+      card.href = agent.url;
+      card.target = "_blank";
+      card.rel = "noreferrer";
+      card.title = `Open ${agent.nickname}`;
+    }
+
+    const state = document.createElement("span");
+    state.className = "thread-state";
+    state.title = agent.state;
+
+    const name = document.createElement("span");
+    name.className = "thread-name";
+    name.textContent = agent.nickname;
+
+    const meta = document.createElement("span");
+    meta.className = "thread-meta";
+    meta.textContent = `${agent.state} · ${agent.source}${agent.url ? " ↗" : ""}`;
+
+    const activity = document.createElement("span");
+    activity.className = "thread-activity";
+    activity.textContent = agent.activity ?? "Waiting for an update";
+    activity.title = agent.activity ?? "";
+
+    card.append(state, name, meta, activity);
+    fragment.append(card);
+  }
+
+  threadList.replaceChildren(fragment);
+  el("thread-total").textContent = `${agents.size} ${agents.size === 1 ? "thread" : "threads"}`;
+  empty.classList.toggle("hidden", agents.size > 0);
 }
 
 export function setConnectionStatus(state: ConnectionState): void {

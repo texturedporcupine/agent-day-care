@@ -8,6 +8,9 @@
       :root {
         --bg: #1a1c2c;
         --panel: #29366f;
+        --panel-dark: #151a3a;
+        --border: #3b5dc9;
+        --muted: #94b0c2;
         --text: #f4f4f4;
         --accent: #a7f070;
       }
@@ -17,15 +20,12 @@
         background: var(--bg);
         color: var(--text);
         font-family: "Courier New", monospace;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
         min-height: 100vh;
       }
       #status-bar {
         width: 100%;
-        max-width: 1024px;
         display: flex;
+        flex-wrap: wrap;
         gap: 16px;
         justify-content: center;
         align-items: center;
@@ -38,18 +38,30 @@
       }
       #status-bar .stat { display: flex; gap: 6px; align-items: center; }
       #status-bar .dot { width: 10px; height: 10px; display: inline-block; }
+      .dot.thinking { background: #ffcd75; }
       .dot.working { background: #a7f070; }
+      .dot.levelup { background: #c17be8; }
       .dot.napping { background: #73eff7; }
       .dot.fainted { background: #ef7d57; }
       #status-bar .tokens { color: var(--accent); }
       #status-bar .conn { margin-left: auto; font-size: 11px; opacity: 0.7; }
+      #workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 12px;
+        width: 100%;
+        min-height: calc(100vh - 38px);
+        padding: 12px;
+      }
       #game {
         position: relative;
-        flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
+        min-width: 0;
+        min-height: 400px;
         width: 100%;
+        overflow: hidden;
       }
       canvas { image-rendering: pixelated; }
       #empty-state {
@@ -67,19 +79,130 @@
         pointer-events: none;
       }
       #empty-state.hidden { display: none; }
+      #threads-panel {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        padding: 14px;
+        background: var(--panel-dark);
+        border: 2px solid var(--border);
+        box-shadow: 4px 4px 0 #0f1230;
+      }
+      .panel-heading {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--panel);
+      }
+      .panel-heading h1 {
+        margin: 0;
+        font-size: 16px;
+        letter-spacing: 1px;
+      }
+      #thread-total {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      #thread-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 10px;
+        overflow-y: auto;
+      }
+      .thread-card {
+        display: grid;
+        grid-template-columns: 10px minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: start;
+        padding: 10px;
+        color: inherit;
+        text-decoration: none;
+        background: #202653;
+        border: 1px solid var(--panel);
+      }
+      .thread-card[href]:hover,
+      .thread-card[href]:focus-visible {
+        border-color: var(--accent);
+        outline: none;
+        transform: translate(-1px, -1px);
+      }
+      .thread-state {
+        width: 10px;
+        height: 10px;
+        margin-top: 2px;
+        background: var(--state-color);
+        box-shadow: 0 0 6px var(--state-color);
+      }
+      .thread-name {
+        overflow: hidden;
+        font-size: 12px;
+        font-weight: bold;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .thread-activity {
+        grid-column: 2 / 4;
+        min-height: 14px;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.35;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .thread-meta {
+        color: var(--muted);
+        font-size: 9px;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      #threads-empty {
+        padding: 24px 8px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.5;
+        text-align: center;
+      }
+      #threads-empty.hidden { display: none; }
+      @media (max-width: 860px) {
+        #workspace {
+          grid-template-columns: 1fr;
+        }
+        #threads-panel {
+          max-height: 360px;
+        }
+        #status-bar .conn {
+          margin-left: 0;
+        }
+      }
     </style>
   </head>
   <body>
     <div id="status-bar">
+      <span class="stat"><span class="dot thinking"></span>thinking <b id="count-thinking">0</b></span>
       <span class="stat"><span class="dot working"></span>working <b id="count-working">0</b></span>
+      <span class="stat"><span class="dot levelup"></span>ready <b id="count-levelup">0</b></span>
       <span class="stat"><span class="dot napping"></span>napping <b id="count-napping">0</b></span>
       <span class="stat"><span class="dot fainted"></span>fainted <b id="count-fainted">0</b></span>
       <span class="stat tokens">tokens today <b id="count-tokens">0</b></span>
       <span class="conn" id="conn-status">connecting…</span>
     </div>
-    <div id="game">
-      <div id="empty-state" class="hidden">connecting to the bus…</div>
-    </div>
+    <main id="workspace">
+      <div id="game">
+        <div id="empty-state" class="hidden">connecting to the bus…</div>
+      </div>
+      <aside id="threads-panel" aria-labelledby="threads-title">
+        <div class="panel-heading">
+          <h1 id="threads-title">Active threads</h1>
+          <span id="thread-total">0 threads</span>
+        </div>
+        <div id="thread-list" aria-live="polite"></div>
+        <div id="threads-empty">Threads appear here as agents connect.</div>
+      </aside>
+    </main>
     <script type="module" src="/client/main.ts"></script>
   </body>
 </html>

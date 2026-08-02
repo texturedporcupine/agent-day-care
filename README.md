@@ -19,6 +19,12 @@ If the bus is unreachable or no agents have arrived yet, the yard shows a
 connection indicator (top-right) and a centered "no agents yet" message instead
 of sitting silent.
 
+The **Active threads** panel is the context-switching view: it lists every
+connected agent, puts errors and completed work first, shows the latest
+activity, and opens the real session when the source provides a deep link. The
+yard remains the visual overview while the panel provides a scannable work
+queue.
+
 ## Tests and CI
 
 ```bash
