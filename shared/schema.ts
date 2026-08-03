@@ -28,6 +28,10 @@ export const agentEventSchema = z.object({
   tokens: z.number().nonnegative().optional(),
   /** Deep link to the real session; clicking the creature opens it. */
   url: z.string().url().optional(),
+  /** Pull request opened by this agent, when the source reports one. */
+  prUrl: z.string().url().optional(),
+  /** Branch the agent is pushing to, when the source reports one. */
+  branch: z.string().optional(),
   ts: z.number(),
 });
 

@@ -124,11 +124,34 @@
         background: #202653;
         border: 1px solid var(--panel);
       }
-      .thread-card[href]:hover,
-      .thread-card[href]:focus-visible {
-        border-color: var(--accent);
+      a.thread-name {
+        color: inherit;
+        text-decoration: none;
+      }
+      a.thread-name:hover,
+      a.thread-name:focus-visible {
+        color: var(--accent);
         outline: none;
-        transform: translate(-1px, -1px);
+      }
+      .thread-links {
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+        grid-column: 2 / 4;
+        min-width: 0;
+        font-size: 10px;
+      }
+      .thread-links a {
+        flex-shrink: 0;
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .thread-links a:hover { text-decoration: underline; }
+      .thread-branch {
+        overflow: hidden;
+        color: var(--muted);
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .thread-state {
         width: 10px;

@@ -55,27 +55,27 @@ export function updateThreadList(agents: Map<string, AgentEvent>): void {
 
   const fragment = document.createDocumentFragment();
   for (const agent of sortedAgents) {
-    const card = agent.url ? document.createElement("a") : document.createElement("article");
+    const card = document.createElement("article");
     card.className = "thread-card";
     card.style.setProperty("--state-color", STATE_COLOR[agent.state]);
-    if (agent.url && card instanceof HTMLAnchorElement) {
-      card.href = agent.url;
-      card.target = "_blank";
-      card.rel = "noreferrer";
-      card.title = `Open ${agent.nickname}`;
-    }
 
     const state = document.createElement("span");
     state.className = "thread-state";
     state.title = agent.state;
 
-    const name = document.createElement("span");
+    const name = document.createElement(agent.url ? "a" : "span");
     name.className = "thread-name";
     name.textContent = agent.nickname;
+    if (name instanceof HTMLAnchorElement && agent.url) {
+      name.href = agent.url;
+      name.target = "_blank";
+      name.rel = "noreferrer";
+      name.title = `Open ${agent.nickname}'s session`;
+    }
 
     const meta = document.createElement("span");
     meta.className = "thread-meta";
-    meta.textContent = `${agent.state} · ${agent.source}${agent.url ? " ↗" : ""}`;
+    meta.textContent = `${agent.state} · ${agent.source}`;
 
     const activity = document.createElement("span");
     activity.className = "thread-activity";
@@ -83,6 +83,28 @@ export function updateThreadList(agents: Map<string, AgentEvent>): void {
     activity.title = agent.activity ?? "";
 
     card.append(state, name, meta, activity);
+
+    if (agent.branch || agent.prUrl) {
+      const links = document.createElement("span");
+      links.className = "thread-links";
+      if (agent.branch) {
+        const branch = document.createElement("span");
+        branch.className = "thread-branch";
+        branch.textContent = agent.branch;
+        branch.title = agent.branch;
+        links.append(branch);
+      }
+      if (agent.prUrl) {
+        const pr = document.createElement("a");
+        pr.href = agent.prUrl;
+        pr.target = "_blank";
+        pr.rel = "noreferrer";
+        pr.textContent = "PR ↗";
+        links.append(pr);
+      }
+      card.append(links);
+    }
+
     fragment.append(card);
   }
 

@@ -8,6 +8,14 @@ import { startCursorCloudCollector } from "./collectors/cursorCloud.js";
 import { startCursorCliCollector } from "./collectors/cursorCli.js";
 import { createWebhookHandler } from "./collectors/webhook.js";
 
+// Collectors read process.env lazily, so loading here covers all of them.
+try {
+  process.loadEnvFile(new URL("../.env", import.meta.url).pathname);
+  console.log("[main] loaded .env");
+} catch {
+  // No .env file; rely on the ambient environment.
+}
+
 const PORT = Number(process.env.BUS_PORT ?? 8787);
 
 function loadPens(): PenConfig[] {
