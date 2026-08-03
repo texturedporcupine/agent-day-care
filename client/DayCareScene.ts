@@ -4,14 +4,14 @@ import { Pen, PEN_W, PEN_H } from "./Pen";
 import { DayCareLady } from "./DayCareLady";
 import { makeTextures } from "./textures";
 import { connectBus, type ConnectionState } from "./net";
-import { updateStatusBar, setConnectionStatus, updateEmptyState } from "./hud";
+import { setConnectionStatus, updateEmptyState, updateStatusBar, updateThreadList } from "./hud";
 
 export const SCENE_W = 512;
 export const SCENE_H = 400;
 
 const PENS_PER_ROW = 4;
 const PEN_GAP = 12;
-const PENS_TOP = 96; // below the day-care building
+const PENS_TOP = 108; // below the day-care building and its sign
 const BUILDING_Y = 24;
 
 export class DayCareScene extends Phaser.Scene {
@@ -57,6 +57,7 @@ export class DayCareScene extends Phaser.Scene {
     }
     pen.update(agent);
     updateStatusBar(this.agents);
+    updateThreadList(this.agents);
     updateEmptyState(this.agents.size, this.connection);
   }
 

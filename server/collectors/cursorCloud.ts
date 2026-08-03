@@ -17,16 +17,25 @@ const API = "https://api.cursor.com";
 const AGENT_POLL_MS = 30_000;
 const USAGE_POLL_MS = 60_000;
 const LEVELUP_LINGER_MS = 6_000;
+/** The yard fits 8 pens (2 rows of 4); track the most recently updated agents. */
+const DEFAULT_AGENT_LIMIT = 8;
 
 const SPECIES_ROTATION = ["sparkmon", "embermon", "aquamon", "leafmon"];
+
+type CloudRepo = { url?: string; startingRef?: string; prUrl?: string };
 
 type CloudAgent = {
   id: string;
   name?: string;
+  /** Agent-level lifecycle: ACTIVE | ARCHIVED. Run-level states come from the stream. */
   status?: string;
   latestRunId?: string;
-  target?: { url?: string };
+  url?: string;
+  repos?: CloudRepo[];
+  updatedAt?: string;
 };
+
+type GitInfo = { branches?: { name?: string; branch?: string; prUrl?: string }[] };
 
 export function startCursorCloudCollector(bus: Bus): void {
   const apiKey = process.env.CURSOR_API_KEY;
@@ -70,32 +79,43 @@ class CursorCloudCollector {
         console.warn("[cursor-cloud] list agents failed:", res.status);
         return;
       }
-      const body = (await res.json()) as { agents?: CloudAgent[] };
-      for (const agent of body.agents ?? []) this.trackAgent(agent);
+      // The v1 API returns { items, nextCursor }; older docs used { agents }.
+      const body = (await res.json()) as { items?: CloudAgent[]; agents?: CloudAgent[] };
+      const limit = Number(process.env.CURSOR_AGENT_LIMIT ?? DEFAULT_AGENT_LIMIT);
+      const agents = (body.items ?? body.agents ?? [])
+        .filter((agent) => agent.status?.toUpperCase() !== "ARCHIVED")
+        .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""))
+        .slice(0, limit);
+      // Stagger stream opens so a burst of new agents doesn't trip rate limits.
+      agents.forEach((agent, i) => this.trackAgent(agent, i * 800));
     } catch (err) {
       console.warn("[cursor-cloud] list agents error:", err);
     }
   }
 
-  private trackAgent(agent: CloudAgent): void {
+  private trackAgent(agent: CloudAgent, streamDelayMs = 0): void {
     const agentId = agent.id;
     this.knownAgents.add(agentId);
+    const repo = agent.repos?.[0];
     const known = this.bus.getAgent(agentId);
     if (!known) {
       const species = SPECIES_ROTATION[this.speciesIndex++ % SPECIES_ROTATION.length]!;
       this.publish(agentId, {
         source: "cursor-cloud",
         species,
-        nickname: agent.name?.slice(0, 14) ?? agentId.slice(0, 10),
+        nickname: agent.name?.slice(0, 40) ?? agentId.slice(0, 10),
         state: "egg",
-        url: `https://cursor.com/agents?id=${agentId}`,
+        url: agent.url ?? `https://cursor.com/agents?id=${agentId}`,
+        ...(repo?.prUrl ? { prUrl: repo.prUrl } : {}),
       });
+    } else if (repo?.prUrl && known.prUrl !== repo.prUrl) {
+      this.publish(agentId, { prUrl: repo.prUrl });
     }
 
     const runId = agent.latestRunId;
     if (runId && this.activeStreams.get(agentId) !== runId) {
       this.activeStreams.set(agentId, runId);
-      void this.streamRun(agentId, runId);
+      setTimeout(() => void this.streamRun(agentId, runId), streamDelayMs);
     } else if (!runId && agent.status) {
       this.publish(agentId, { state: mapStatus(agent.status) });
     }
@@ -110,8 +130,15 @@ class CursorCloudCollector {
         },
       });
 
-      if (res.status === 410) {
+      // 410 = stream expired, 409 = run no longer streamable (already finished):
+      // both mean "read the terminal state instead".
+      if (res.status === 410 || res.status === 409) {
         await this.readTerminalState(agentId, runId);
+        return;
+      }
+      if (res.status === 429) {
+        const backoff = 5000 + Math.random() * 10_000;
+        setTimeout(() => void this.streamRun(agentId, runId, lastEventId), backoff);
         return;
       }
       if (!res.ok || !res.body) {
@@ -178,11 +205,13 @@ class CursorCloudCollector {
       this.publish(agentId, { state: "fainted", activity: "run errored" });
       return;
     }
-    const branch =
-      (git as { branches?: { name?: string }[] } | undefined)?.branches?.[0]?.name;
+    const head = (git as GitInfo | undefined)?.branches?.[0];
+    const branch = head?.branch ?? head?.name;
     this.publish(agentId, {
       state: "levelup",
       activity: branch ? `pushed ${branch}` : "finished a run!",
+      ...(branch ? { branch } : {}),
+      ...(head?.prUrl ? { prUrl: head.prUrl } : {}),
     });
     setTimeout(() => {
       if (this.bus.getAgent(agentId)?.state === "levelup") {
@@ -230,6 +259,8 @@ function mapStatus(status: string): CreatureState {
   switch (status.toUpperCase()) {
     case "RUNNING":
       return "working";
+    case "ACTIVE":
+      return "napping";
     case "CREATING":
     case "PENDING":
     case "QUEUED":

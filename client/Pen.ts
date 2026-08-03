@@ -71,15 +71,16 @@ export class Pen extends Phaser.GameObjects.Container {
       .setOrigin(0.5, 1);
     this.add(this.overlayText);
 
+    // Starts right of the source badge (which spans x 4-16) to avoid overlap.
     this.nicknameText = scene.add
-      .text(PEN_W / 2 + 4, -2, agent.nickname, {
+      .text(20, -2, agent.nickname, {
         fontFamily: "Courier New",
         fontSize: "10px",
         color: "#f4f4f4",
         stroke: "#1a1c2c",
         strokeThickness: 3,
       })
-      .setOrigin(0.5, 1);
+      .setOrigin(0, 1);
     this.add(this.nicknameText);
 
     this.activityText = scene.add
@@ -109,7 +110,7 @@ export class Pen extends Phaser.GameObjects.Container {
     const prev = this.current;
     this.current = agent;
 
-    this.nicknameText.setText(agent.nickname);
+    this.nicknameText.setText(truncate(agent.nickname, 15));
     this.activityText.setText(truncate(agent.activity ?? "", 24));
     this.updateBowl(agent.tokens ?? 0);
 

@@ -19,6 +19,12 @@ If the bus is unreachable or no agents have arrived yet, the yard shows a
 connection indicator (top-right) and a centered "no agents yet" message instead
 of sitting silent.
 
+The **Active threads** panel is the context-switching view: it lists every
+connected agent, puts errors and completed work first, shows the latest
+activity, and opens the real session when the source provides a deep link. The
+yard remains the visual overview while the panel provides a scannable work
+queue.
+
 ## Tests and CI
 
 ```bash
@@ -73,8 +79,9 @@ Adding a new source is one small file:
 
 ## Collectors and env vars
 
-Copy `.env.example` to `.env`. Everything is off by default except the mock
-(which auto-disables once any real source is configured; force with `MOCK=1`/`MOCK=0`).
+Copy `.env.example` to `.env` — the server loads it automatically at boot.
+Everything is off by default except the mock (which auto-disables once any real
+source is configured; force with `MOCK=1`/`MOCK=0`).
 
 ### cursor-cloud — `CURSOR_API_KEY`
 
@@ -82,7 +89,9 @@ Uses the [Cloud Agents API](https://cursor.com/docs/cloud-agent/api/endpoints):
 enumerates agents via `GET /v1/agents`, opens the SSE stream for each agent's
 latest run, resumes with `Last-Event-ID`, falls back to `GET .../runs/{runId}`
 on `410 stream_expired`, and polls `/usage` for `totalTokens` (the food bowl).
-Create a key at Cursor Dashboard -> API Keys.
+Create a key at Cursor Dashboard -> API Keys. Tracks your
+`CURSOR_AGENT_LIMIT` (default 8) most recently updated, non-archived agents;
+branch and PR links reported by the API show up on each agent's thread card.
 
 ### cursor-cli — `CURSOR_CLI=1`
 
