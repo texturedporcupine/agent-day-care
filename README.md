@@ -150,8 +150,24 @@ publishes events. Agents that show up without a pen get one automatically.
 
 ## Art
 
-All sprites are original pixel art generated at boot from pixel-string
-templates in [client/textures.ts](client/textures.ts) — no binary assets, no
-copyrighted creatures. To swap in real sprite sheets (e.g. Kenney packs), load
-images under the same texture keys (`creature-<species>`, `egg`, `lady`,
-`prop-*`).
+By default all sprites are original pixel art generated at boot from
+pixel-string templates in [client/textures.ts](client/textures.ts) — no binary
+assets, no copyrighted creatures in the repo.
+
+### Real Pokémon minisprites (optional, stays on your machine)
+
+```bash
+npm run sprites                     # default set (pikachu, cyndaquil, ...)
+npm run sprites -- sparkmon=raichu  # remap a species
+npm run sprites -- --style gen7x    # pre-gen8 icon style, closer to B2W2
+```
+
+Downloads official minisprites (the B2W2-style menu icons) from
+[pokesprite](https://github.com/msikma/pokesprite) into `public/sprites/`
+(gitignored — game sprites are Nintendo IP and are never committed) and writes
+`manifest.json`. The scene loads whatever the manifest lists and generates
+pixel-art fallbacks for everything else. You can also hand-place PNGs (e.g.
+sliced overworld sheets from
+[The Spriters Resource](https://www.spriters-resource.com)) as
+`creature-<species>.png`, `egg.png`, `lady.png` or `prop-*.png`, then re-run
+`npm run sprites` to rebuild the manifest.

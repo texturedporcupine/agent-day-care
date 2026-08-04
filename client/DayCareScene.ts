@@ -24,7 +24,26 @@ export class DayCareScene extends Phaser.Scene {
     super("daycare");
   }
 
+  preload(): void {
+    // Optional real sprites (npm run sprites); missing manifest is fine.
+    this.load.json("sprite-manifest", "sprites/manifest.json");
+  }
+
   create(): void {
+    const manifest = this.cache.json.get("sprite-manifest") as Record<string, string> | undefined;
+    const entries = manifest ? Object.entries(manifest) : [];
+    if (entries.length === 0) {
+      this.buildScene();
+      return;
+    }
+    for (const [key, file] of entries) {
+      if (!this.textures.exists(key)) this.load.image(key, `sprites/${file}`);
+    }
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => this.buildScene());
+    this.load.start();
+  }
+
+  private buildScene(): void {
     makeTextures(this);
     this.buildYard();
     this.lady = new DayCareLady(this, SCENE_W / 2 + 80, BUILDING_Y + 56);

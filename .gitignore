@@ -5,3 +5,6 @@ dist/
 daycare.config.json
 .DS_Store
 *.log
+# Downloaded game sprites (Nintendo IP) stay local; see scripts/fetch-sprites.mjs
+public/sprites/*.png
+public/sprites/manifest.json

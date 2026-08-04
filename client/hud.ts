@@ -13,12 +13,12 @@ const STATE_PRIORITY: Record<CreatureState, number> = {
 };
 
 const STATE_COLOR: Record<CreatureState, string> = {
-  fainted: "#ef7d57",
-  levelup: "#c17be8",
-  working: "#a7f070",
-  thinking: "#ffcd75",
-  egg: "#f4f4f4",
-  napping: "#73eff7",
+  fainted: "#f05868",
+  levelup: "#c880e8",
+  working: "#78d048",
+  thinking: "#f8c850",
+  egg: "#a0b0bc",
+  napping: "#58c8e8",
 };
 
 /** Updates the DOM status bar above the Phaser canvas. */

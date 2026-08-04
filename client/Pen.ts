@@ -53,7 +53,7 @@ export class Pen extends Phaser.GameObjects.Container {
     this.add(this.bowlFill);
 
     this.creature = scene.add
-      .sprite(SPOTS.center.x, SPOTS.center.y, speciesTextureKey(agent.species))
+      .sprite(SPOTS.center.x, SPOTS.center.y, speciesTextureKey(scene, agent.species))
       .setInteractive({ useHandCursor: true });
     this.creature.on("pointerdown", () => {
       if (this.current?.url) window.open(this.current.url, "_blank");
@@ -131,7 +131,7 @@ export class Pen extends Phaser.GameObjects.Container {
     this.flash.setAlpha(0);
 
     const isEgg = agent.state === "egg";
-    this.creature.setTexture(isEgg ? "egg" : speciesTextureKey(agent.species));
+    this.creature.setTexture(isEgg ? "egg" : speciesTextureKey(this.scene, agent.species));
 
     const spot = agent.state === "working" && agent.tool ? TOOL_SPOT[agent.tool] : behavior.spot;
     const target = SPOTS[spot];
