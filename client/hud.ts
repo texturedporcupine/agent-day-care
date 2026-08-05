@@ -77,16 +77,32 @@ export function updateThreadList(agents: Map<string, AgentEvent>): void {
     meta.className = "thread-meta";
     meta.textContent = `${agent.state} · ${agent.source}`;
 
+    card.append(state, name, meta);
+
+    if (agent.task) {
+      const task = document.createElement("span");
+      task.className = "thread-task";
+      task.textContent = agent.task;
+      task.title = agent.task;
+      card.append(task);
+    }
+
     const activity = document.createElement("span");
     activity.className = "thread-activity";
-    activity.textContent = agent.activity ?? "Waiting for an update";
+    activity.textContent = agent.activity ? `▸ ${agent.activity}` : "▸ waiting for an update";
     activity.title = agent.activity ?? "";
+    card.append(activity);
 
-    card.append(state, name, meta, activity);
-
-    if (agent.branch || agent.prUrl) {
+    if (agent.repo || agent.branch || agent.prUrl) {
       const links = document.createElement("span");
       links.className = "thread-links";
+      if (agent.repo) {
+        const repo = document.createElement("span");
+        repo.className = "thread-repo";
+        repo.textContent = agent.repo;
+        repo.title = agent.repo;
+        links.append(repo);
+      }
       if (agent.branch) {
         const branch = document.createElement("span");
         branch.className = "thread-branch";

@@ -97,6 +97,7 @@ class CursorCloudCollector {
     const agentId = agent.id;
     this.knownAgents.add(agentId);
     const repo = agent.repos?.[0];
+    const repoName = repo?.url?.replace(/^(https?:\/\/)?(www\.)?github\.com\//, "");
     const known = this.bus.getAgent(agentId);
     if (!known) {
       const species = SPECIES_ROTATION[this.speciesIndex++ % SPECIES_ROTATION.length]!;
@@ -106,6 +107,7 @@ class CursorCloudCollector {
         nickname: agent.name?.slice(0, 40) ?? agentId.slice(0, 10),
         state: "egg",
         url: agent.url ?? `https://cursor.com/agents?id=${agentId}`,
+        ...(repoName ? { repo: repoName } : {}),
         ...(repo?.prUrl ? { prUrl: repo.prUrl } : {}),
       });
     } else if (repo?.prUrl && known.prUrl !== repo.prUrl) {
@@ -187,6 +189,20 @@ class CursorCloudCollector {
       case "assistant":
         this.publish(agentId, { state: "working", activity: "writing a reply" });
         return false;
+      case "interaction_update": {
+        // The latest user message is the agent's current high-level ask.
+        if (data?.type === "user-message-appended") {
+          const text = (data.userMessage as { text?: string } | undefined)?.text;
+          if (text) {
+            this.publish(agentId, {
+              state: "working",
+              task: normalizeWhitespace(text).slice(0, 200),
+              activity: "reading new instructions",
+            });
+          }
+        }
+        return false;
+      }
       case "result": {
         const status = String(data?.status ?? "FINISHED");
         this.finishRun(agentId, status, data?.git);
@@ -309,6 +325,10 @@ async function* parseSse(body: ReadableStream<Uint8Array>): AsyncGenerator<SseEv
       }
     }
   }
+}
+
+function normalizeWhitespace(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
 }
 
 function safeJson(text: string): Record<string, unknown> | undefined {
