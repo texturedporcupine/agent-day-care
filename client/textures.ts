@@ -184,8 +184,11 @@ export const SPECIES_COLORS: Record<string, { body: string; light: string }> = {
   default: { body: "#c68fdf", light: "#e6c3f5" },
 };
 
-export function speciesTextureKey(species: string): string {
-  return SPECIES_COLORS[species] ? `creature-${species}` : "creature-default";
+export function speciesTextureKey(scene: Phaser.Scene, species: string): string {
+  const key = `creature-${species}`;
+  // Real loaded sprites win; then generated palettes; then the default creature.
+  if (scene.textures.exists(key) || SPECIES_COLORS[species]) return key;
+  return "creature-default";
 }
 
 export function makeTextures(scene: Phaser.Scene): void {

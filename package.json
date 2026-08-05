@@ -10,7 +10,8 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "sprites": "node scripts/fetch-sprites.mjs"
   },
   "dependencies": {
     "phaser": "^3.87.0",

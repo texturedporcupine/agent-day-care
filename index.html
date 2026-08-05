@@ -6,20 +6,31 @@
     <link rel="icon" href="data:," />
     <title>Agent Day Care</title>
     <style>
+      /* Pokémon Black 2 / White 2 menu theme: dark slate backdrop, black
+         info bar, white rounded panels with thick outlines, cyan accents. */
       :root {
-        --bg: #1a1c2c;
-        --panel: #29366f;
-        --panel-dark: #151a3a;
-        --border: #3b5dc9;
-        --muted: #94b0c2;
-        --text: #f4f4f4;
-        --accent: #a7f070;
+        --bg: #2e3840;
+        --bg-grid: #333f48;
+        --bar: #101418;
+        --bar-border: #48b0e0;
+        --panel-face: #f8f8f8;
+        --panel-border: #22282e;
+        --panel-bevel: #b8c4cc;
+        --card-face: #eef4f8;
+        --card-border: #c2ced8;
+        --text-light: #f4f4f4;
+        --text-dark: #303840;
+        --muted: #6e8090;
+        --accent: #48b0e0;
+        --accent-link: #1e88c8;
+        --tokens: #f8c850;
       }
       * { box-sizing: border-box; }
       body {
         margin: 0;
-        background: var(--bg);
-        color: var(--text);
+        background:
+          repeating-linear-gradient(45deg, var(--bg) 0 12px, var(--bg-grid) 12px 24px);
+        color: var(--text-light);
         font-family: "Courier New", monospace;
         min-height: 100vh;
       }
@@ -31,28 +42,34 @@
         justify-content: center;
         align-items: center;
         padding: 8px 12px;
-        background: var(--panel);
-        border-bottom: 4px solid #0f1230;
+        background: var(--bar);
+        border-bottom: 3px solid var(--bar-border);
         font-size: 14px;
         letter-spacing: 1px;
         image-rendering: pixelated;
       }
       #status-bar .stat { display: flex; gap: 6px; align-items: center; }
-      #status-bar .dot { width: 10px; height: 10px; display: inline-block; }
-      .dot.thinking { background: #ffcd75; }
-      .dot.working { background: #a7f070; }
-      .dot.levelup { background: #c17be8; }
-      .dot.napping { background: #73eff7; }
-      .dot.fainted { background: #ef7d57; }
-      #status-bar .tokens { color: var(--accent); }
-      #status-bar .conn { margin-left: auto; font-size: 11px; opacity: 0.7; }
+      #status-bar .dot {
+        width: 10px;
+        height: 10px;
+        display: inline-block;
+        border-radius: 2px;
+        box-shadow: 0 0 4px rgba(255, 255, 255, 0.25);
+      }
+      .dot.thinking { background: #f8c850; }
+      .dot.working { background: #78d048; }
+      .dot.levelup { background: #c880e8; }
+      .dot.napping { background: #58c8e8; }
+      .dot.fainted { background: #f05868; }
+      #status-bar .tokens { color: var(--tokens); }
+      #status-bar .conn { margin-left: auto; font-size: 11px; opacity: 0.8; }
       #workspace {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 340px;
-        gap: 12px;
+        gap: 14px;
         width: 100%;
-        min-height: calc(100vh - 38px);
-        padding: 12px;
+        min-height: calc(100vh - 40px);
+        padding: 14px;
       }
       #game {
         position: relative;
@@ -63,6 +80,10 @@
         min-height: 400px;
         width: 100%;
         overflow: hidden;
+        background: #1a2028;
+        border: 3px solid var(--panel-border);
+        border-radius: 8px;
+        box-shadow: inset 0 0 0 2px var(--panel-bevel), 0 3px 0 rgba(0, 0, 0, 0.35);
       }
       canvas { image-rendering: pixelated; }
       #empty-state {
@@ -71,9 +92,10 @@
         left: 50%;
         transform: translate(-50%, -50%);
         padding: 10px 16px;
-        background: rgba(15, 18, 48, 0.85);
-        border: 2px solid var(--panel);
-        color: var(--text);
+        background: var(--panel-face);
+        border: 3px solid var(--panel-border);
+        border-radius: 6px;
+        color: var(--text-dark);
         font-size: 13px;
         letter-spacing: 1px;
         text-align: center;
@@ -84,33 +106,40 @@
         display: flex;
         flex-direction: column;
         min-height: 0;
-        padding: 14px;
-        background: var(--panel-dark);
-        border: 2px solid var(--border);
-        box-shadow: 4px 4px 0 #0f1230;
+        background: var(--panel-face);
+        border: 3px solid var(--panel-border);
+        border-radius: 8px;
+        box-shadow: inset 0 0 0 2px var(--panel-bevel), 0 3px 0 rgba(0, 0, 0, 0.35);
+        color: var(--text-dark);
+        overflow: hidden;
       }
       .panel-heading {
         display: flex;
         align-items: baseline;
         justify-content: space-between;
         gap: 12px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid var(--panel);
+        padding: 10px 14px;
+        background: var(--accent);
+        border-bottom: 3px solid var(--panel-border);
       }
       .panel-heading h1 {
         margin: 0;
-        font-size: 16px;
+        font-size: 15px;
         letter-spacing: 1px;
+        color: #ffffff;
+        text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+        text-transform: uppercase;
       }
       #thread-total {
-        color: var(--muted);
+        color: #eaf6fc;
         font-size: 11px;
+        text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
       }
       #thread-list {
         display: flex;
         flex-direction: column;
         gap: 8px;
-        margin-top: 10px;
+        padding: 12px;
         overflow-y: auto;
       }
       .thread-card {
@@ -119,10 +148,11 @@
         gap: 8px;
         align-items: start;
         padding: 10px;
-        color: inherit;
-        text-decoration: none;
-        background: #202653;
-        border: 1px solid var(--panel);
+        color: var(--text-dark);
+        background: var(--card-face);
+        border: 2px solid var(--card-border);
+        border-radius: 6px;
+        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
       }
       a.thread-name {
         color: inherit;
@@ -130,7 +160,7 @@
       }
       a.thread-name:hover,
       a.thread-name:focus-visible {
-        color: var(--accent);
+        color: var(--accent-link);
         outline: none;
       }
       .thread-links {
@@ -143,7 +173,8 @@
       }
       .thread-links a {
         flex-shrink: 0;
-        color: var(--accent);
+        color: var(--accent-link);
+        font-weight: bold;
         text-decoration: none;
       }
       .thread-links a:hover { text-decoration: underline; }
@@ -157,8 +188,9 @@
         width: 10px;
         height: 10px;
         margin-top: 2px;
+        border-radius: 2px;
         background: var(--state-color);
-        box-shadow: 0 0 6px var(--state-color);
+        box-shadow: 0 0 5px var(--state-color);
       }
       .thread-name {
         overflow: hidden;

@@ -18,7 +18,7 @@ const game = new Phaser.Game({
   height: SCENE_H,
   zoom: responsiveZoom(),
   pixelArt: true,
-  backgroundColor: "#1a1c2c",
+  backgroundColor: "#1e3a28",
   scene: [DayCareScene],
 });
 

@@ -9,5 +9,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Pop the dashboard open in the default browser on `npm run dev`.
+    // Headless environments (CI, cloud VMs) just log a warning and continue.
+    open: true,
   },
 });
