@@ -36,6 +36,10 @@ export const agentEventSchema = z.object({
   repo: z.string().optional(),
   /** The latest instruction given to the agent — the current high-level ask. */
   task: z.string().optional(),
+  /** The first instruction captured for this thread — what it is for. */
+  mission: z.string().optional(),
+  /** Set by the bus: when the agent entered its current state. */
+  stateSince: z.number().optional(),
   ts: z.number(),
 });
 

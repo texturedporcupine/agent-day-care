@@ -16,7 +16,6 @@ import { normalizeTool, type AgentEventPatch, type CreatureState } from "../../s
 const API = "https://api.cursor.com";
 const AGENT_POLL_MS = 30_000;
 const USAGE_POLL_MS = 60_000;
-const LEVELUP_LINGER_MS = 6_000;
 /** The yard fits 8 pens (2 rows of 4); track the most recently updated agents. */
 const DEFAULT_AGENT_LIMIT = 8;
 
@@ -223,17 +222,13 @@ class CursorCloudCollector {
     }
     const head = (git as GitInfo | undefined)?.branches?.[0];
     const branch = head?.branch ?? head?.name;
+    // Stays in levelup ("needs you") until a new run starts or you dismiss it.
     this.publish(agentId, {
       state: "levelup",
       activity: branch ? `pushed ${branch}` : "finished a run!",
       ...(branch ? { branch } : {}),
       ...(head?.prUrl ? { prUrl: head.prUrl } : {}),
     });
-    setTimeout(() => {
-      if (this.bus.getAgent(agentId)?.state === "levelup") {
-        this.publish(agentId, { state: "napping", activity: "resting" });
-      }
-    }, LEVELUP_LINGER_MS);
   }
 
   private async readTerminalState(agentId: string, runId: string): Promise<void> {

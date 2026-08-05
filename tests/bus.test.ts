@@ -109,4 +109,43 @@ describe("Bus", () => {
 
     expect(bus.getAgent("p1")?.state).toBe("working");
   });
+
+  it("tracks stateSince across state changes and keeps it stable within a state", () => {
+    bus.publish({ agentId: "a1", state: "working", ts: 100 });
+    expect(bus.getAgent("a1")?.stateSince).toBe(100);
+
+    // Same state: stateSince unchanged even as events keep arriving.
+    bus.publish({ agentId: "a1", state: "working", activity: "still at it", ts: 200 });
+    expect(bus.getAgent("a1")?.stateSince).toBe(100);
+
+    // New state: stateSince resets to that event's ts.
+    bus.publish({ agentId: "a1", state: "levelup", ts: 300 });
+    expect(bus.getAgent("a1")?.stateSince).toBe(300);
+  });
+
+  it("promotes the first task to mission and keeps it as tasks change", () => {
+    bus.publish({ agentId: "a1", state: "working", task: "build the dashboard", ts: 1 });
+    bus.publish({ agentId: "a1", task: "now fix the tests", ts: 2 });
+
+    expect(bus.getAgent("a1")).toMatchObject({
+      mission: "build the dashboard",
+      task: "now fix the tests",
+    });
+  });
+
+  it("restores remembered asks and reports task changes", () => {
+    const onTaskChange = vi.fn();
+    const memory = { a1: { mission: "original ask", task: "latest ask" } };
+    const restoringBus = new Bus(undefined, memory, onTaskChange);
+
+    restoringBus.publish({ agentId: "a1", state: "napping", ts: 1 });
+    expect(restoringBus.getAgent("a1")).toMatchObject({
+      mission: "original ask",
+      task: "latest ask",
+    });
+
+    restoringBus.publish({ agentId: "a1", task: "newer ask", ts: 2 });
+    expect(memory["a1"]).toEqual({ mission: "original ask", task: "newer ask" });
+    expect(onTaskChange).toHaveBeenCalled();
+  });
 });

@@ -63,6 +63,17 @@
       .dot.fainted { background: #f05868; }
       #status-bar .tokens { color: var(--tokens); }
       #status-bar .conn { margin-left: auto; font-size: 11px; opacity: 0.8; }
+      #notify-toggle {
+        padding: 2px 8px;
+        color: var(--text-light);
+        font-family: inherit;
+        font-size: 11px;
+        background: transparent;
+        border: 1px solid var(--muted);
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      #notify-toggle.enabled { border-color: var(--accent); color: var(--accent); }
       #workspace {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 340px;
@@ -142,6 +153,45 @@
         padding: 12px;
         overflow-y: auto;
       }
+      .bucket-heading {
+        margin-top: 4px;
+        padding: 3px 8px;
+        font-size: 10px;
+        font-weight: bold;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #ffffff;
+        border-radius: 4px;
+      }
+      .bucket-heading.bucket-needs-you { background: #e05868; }
+      .bucket-heading.bucket-running { background: #58a838; }
+      .bucket-heading.bucket-idle { background: #90a0b0; }
+      .thread-meta-wrap {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .thread-dismiss {
+        padding: 0 6px;
+        color: #ffffff;
+        font-family: inherit;
+        font-size: 10px;
+        line-height: 16px;
+        background: #58a838;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      .thread-dismiss:hover { background: #6cc247; }
+      .thread-followup {
+        grid-column: 2 / 4;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 10px;
+        font-style: italic;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
       .thread-card {
         display: grid;
         grid-template-columns: 10px minmax(0, 1fr) auto;
@@ -182,10 +232,16 @@
         flex-shrink: 0;
         padding: 1px 5px;
         color: #ffffff;
+        font-family: inherit;
+        font-size: inherit;
         font-weight: bold;
         background: var(--accent);
+        border: none;
         border-radius: 3px;
+        cursor: pointer;
       }
+      .thread-repo:hover { background: #38a0d0; }
+      .thread-repo.active { outline: 2px solid #ffffff; }
       .thread-branch {
         overflow: hidden;
         color: var(--muted);
@@ -262,6 +318,7 @@
       <span class="stat"><span class="dot napping"></span>napping <b id="count-napping">0</b></span>
       <span class="stat"><span class="dot fainted"></span>fainted <b id="count-fainted">0</b></span>
       <span class="stat tokens">tokens today <b id="count-tokens">0</b></span>
+      <button id="notify-toggle" type="button">🔔 notify</button>
       <span class="conn" id="conn-status">connecting…</span>
     </div>
     <main id="workspace">

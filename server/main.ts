@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
 import { z } from "zod";
 import { Bus } from "./bus.js";
+import { loadTaskMemory, saveTaskMemory } from "./taskStore.js";
 import { penConfigSchema, type PenConfig } from "../shared/schema.js";
 import { startMockCollector } from "./collectors/mock.js";
 import { startCursorCloudCollector } from "./collectors/cursorCloud.js";
@@ -41,7 +42,8 @@ const httpServer = createServer((req, res) => {
   res.writeHead(404).end();
 });
 
-const bus = new Bus(httpServer);
+const taskMemory = loadTaskMemory();
+const bus = new Bus(httpServer, taskMemory, () => saveTaskMemory(taskMemory));
 const webhookHandler = createWebhookHandler(bus);
 bus.registerPens(loadPens());
 

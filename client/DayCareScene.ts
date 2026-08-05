@@ -4,7 +4,13 @@ import { Pen, PEN_W, PEN_H } from "./Pen";
 import { DayCareLady } from "./DayCareLady";
 import { makeTextures } from "./textures";
 import { connectBus, type ConnectionState } from "./net";
-import { setConnectionStatus, updateEmptyState, updateStatusBar, updateThreadList } from "./hud";
+import {
+  initNotifications,
+  setConnectionStatus,
+  updateEmptyState,
+  updateStatusBar,
+  updateThreadList,
+} from "./hud";
 
 export const SCENE_W = 512;
 export const SCENE_H = 400;
@@ -54,6 +60,7 @@ export class DayCareScene extends Phaser.Scene {
       callback: () => this.lady.tend([...this.pens.values()]),
     });
 
+    initNotifications();
     updateEmptyState(this.agents.size, this.connection);
     connectBus({
       onAgent: (agent) => this.onAgent(agent),
