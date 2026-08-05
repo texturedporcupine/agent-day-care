@@ -32,6 +32,14 @@ export const agentEventSchema = z.object({
   prUrl: z.string().url().optional(),
   /** Branch the agent is pushing to, when the source reports one. */
   branch: z.string().optional(),
+  /** Repo/project the agent works in, e.g. "owner/name". */
+  repo: z.string().optional(),
+  /** The latest instruction given to the agent — the current high-level ask. */
+  task: z.string().optional(),
+  /** The first instruction captured for this thread — what it is for. */
+  mission: z.string().optional(),
+  /** Set by the bus: when the agent entered its current state. */
+  stateSince: z.number().optional(),
   ts: z.number(),
 });
 

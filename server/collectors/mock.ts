@@ -16,6 +16,14 @@ const CREATURES: MockCreature[] = [
   { agentId: "mock-chatgtm-1", source: "chatgtm", species: "leafmon", nickname: "Bulbabot", tokens: 0 },
 ];
 
+const MOCK_REPOS = ["you/demo-app", "you/api-server", "you/docs-site", "you/mobile-app"];
+const MOCK_TASKS = [
+  "Add dark mode support across the settings screens",
+  "Fix the flaky payment webhook integration tests",
+  "Refactor the auth middleware and add rate limiting",
+  "Write onboarding docs for the new CLI workflow",
+];
+
 const ACTIVITIES: Record<Tool, string[]> = {
   read_file: ["reading README.md", "reading src/index.ts", "skimming docs/"],
   run_terminal_cmd: ["running tests", "npm install", "building the app"],
@@ -34,6 +42,11 @@ const pick = <T>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.len
  */
 export function startMockCollector(bus: Bus): void {
   for (const [i, creature] of CREATURES.entries()) {
+    publish(bus, creature, {
+      state: "egg",
+      repo: MOCK_REPOS[i % MOCK_REPOS.length],
+      task: MOCK_TASKS[i % MOCK_TASKS.length],
+    });
     setTimeout(() => runLifecycle(bus, creature), i * 1500);
   }
   console.log("[mock] collector started with", CREATURES.length, "creatures");

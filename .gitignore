@@ -3,6 +3,7 @@ dist/
 .env
 .env.local
 daycare.config.json
+.daycare-tasks.json
 .DS_Store
 *.log
 # Downloaded game sprites (Nintendo IP) stay local; see scripts/fetch-sprites.mjs

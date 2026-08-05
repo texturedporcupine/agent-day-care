@@ -16,7 +16,6 @@ import { normalizeTool, type AgentEventPatch, type CreatureState } from "../../s
 const API = "https://api.cursor.com";
 const AGENT_POLL_MS = 30_000;
 const USAGE_POLL_MS = 60_000;
-const LEVELUP_LINGER_MS = 6_000;
 /** The yard fits 8 pens (2 rows of 4); track the most recently updated agents. */
 const DEFAULT_AGENT_LIMIT = 8;
 
@@ -97,6 +96,7 @@ class CursorCloudCollector {
     const agentId = agent.id;
     this.knownAgents.add(agentId);
     const repo = agent.repos?.[0];
+    const repoName = repo?.url?.replace(/^(https?:\/\/)?(www\.)?github\.com\//, "");
     const known = this.bus.getAgent(agentId);
     if (!known) {
       const species = SPECIES_ROTATION[this.speciesIndex++ % SPECIES_ROTATION.length]!;
@@ -106,6 +106,7 @@ class CursorCloudCollector {
         nickname: agent.name?.slice(0, 40) ?? agentId.slice(0, 10),
         state: "egg",
         url: agent.url ?? `https://cursor.com/agents?id=${agentId}`,
+        ...(repoName ? { repo: repoName } : {}),
         ...(repo?.prUrl ? { prUrl: repo.prUrl } : {}),
       });
     } else if (repo?.prUrl && known.prUrl !== repo.prUrl) {
@@ -187,6 +188,20 @@ class CursorCloudCollector {
       case "assistant":
         this.publish(agentId, { state: "working", activity: "writing a reply" });
         return false;
+      case "interaction_update": {
+        // The latest user message is the agent's current high-level ask.
+        if (data?.type === "user-message-appended") {
+          const text = (data.userMessage as { text?: string } | undefined)?.text;
+          if (text) {
+            this.publish(agentId, {
+              state: "working",
+              task: normalizeWhitespace(text).slice(0, 200),
+              activity: "reading new instructions",
+            });
+          }
+        }
+        return false;
+      }
       case "result": {
         const status = String(data?.status ?? "FINISHED");
         this.finishRun(agentId, status, data?.git);
@@ -207,17 +222,13 @@ class CursorCloudCollector {
     }
     const head = (git as GitInfo | undefined)?.branches?.[0];
     const branch = head?.branch ?? head?.name;
+    // Stays in levelup ("needs you") until a new run starts or you dismiss it.
     this.publish(agentId, {
       state: "levelup",
       activity: branch ? `pushed ${branch}` : "finished a run!",
       ...(branch ? { branch } : {}),
       ...(head?.prUrl ? { prUrl: head.prUrl } : {}),
     });
-    setTimeout(() => {
-      if (this.bus.getAgent(agentId)?.state === "levelup") {
-        this.publish(agentId, { state: "napping", activity: "resting" });
-      }
-    }, LEVELUP_LINGER_MS);
   }
 
   private async readTerminalState(agentId: string, runId: string): Promise<void> {
@@ -309,6 +320,10 @@ async function* parseSse(body: ReadableStream<Uint8Array>): AsyncGenerator<SseEv
       }
     }
   }
+}
+
+function normalizeWhitespace(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
 }
 
 function safeJson(text: string): Record<string, unknown> | undefined {
